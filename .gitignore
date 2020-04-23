@@ -1,7 +1,6 @@
-start_my.cmd
+*.my.*
 
 package-lock.json
-
 
 # Logs
 logs
