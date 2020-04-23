@@ -1,0 +1,16 @@
+{
+  "name": "vk-pandemia-bot",
+  "version": "1.0.0",
+  "description": "Бот для игры пандемия в ВК",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js && pause",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Zagadochnik37",
+  "license": "ISC",
+  "dependencies": {
+    "minimist": "^1.2.5",
+    "request": "^2.88.2"
+  }
+}
