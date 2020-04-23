@@ -57,10 +57,12 @@ async function init() {
  -sb (smartbuy) h(health) / i(infection) "-sb h" = закупить улучшения здоровья
  -sb h/i t(timer) <time> (-sb i t 120 (или 2m) = закупка нападения раз в 2 минуты)
     <time> 1h = 60m = 3600s = 3600
+	-sb h/i t = удаление таймера
  -sb min h/i <count> (минимальное количество очков) "-sb min h 1000000",  "-sb min h 2h" - по умолчанию
     *вместо числа можно написать "2h", что означает колличество очков, добываемые за 2 часа
  -show mine (-s m) - показывает текущую скорость добычи
  -show bafs (-s b) Показать бонусы (в JSON)
+ -show points (-s p) Показывает очки здоровья и атаки (также обновляет информацию о пользователе)
 `);
 	
 	/*try {
@@ -87,6 +89,32 @@ async function init() {
 
 init();
 
+var death_h = false, death_i = false;
+var ti_h, ti_i;
+function ifDeath() {
+	if (ses.isDeath) {
+		console.log(`Т.к. вы мертвы, таймеры будут приостановлены на ${ses.timeToLife}`);
+		if (sbiInterval != 0) clearInterval(sbiInterval);
+		if (sbhInterval != 0) clearInterval(sbhInterval);
+		var ttl_ = ses.timeToLife
+		var tm = parseInterval(ttl_[0]+'h') + parseInterval(ttl_[1]+'m');
+		death_h = Boolean(sbhInterval);
+		death_i = Boolean(sbiInterval);
+		setTimeout(
+			function() {
+				if (death_h) {
+					sbhInterval = setInterval(sbhIfunc, ti_h);
+					console.log(' > Таймер здоровья успешно возобновлён');
+				};
+				if (death_i) {
+					sbhInterval = setInterval(sbhIfunc, ti_i);
+					console.log(' > Таймер здоровья успешно возобновлён');
+				};
+			}, tm);
+		return true;
+	};
+};
+
 var sbhInterval = 0;
 var sbhIfunc = async function() {
 	try {
@@ -95,6 +123,7 @@ var sbhIfunc = async function() {
 			console.log(' > Вас атакуют, покупка улучшений отменена');
 			return;
 		}
+		if (ifDeath()) return;
 		await ses.smartBuy_h();
 	} catch (e) {
 		console.log(e);
@@ -104,6 +133,7 @@ var sbiInterval = 0;
 var sbiIfunc = async function() {
 	try {
 		await ses.updatePoints();
+		if (ifDeath()) return;
 		await ses.smartBuy_d();
 	} catch (e) {
 		console.log(e);
@@ -131,18 +161,33 @@ async function cmd(line) {
 	
 	if (args[0] == 'sb' || args[0] == 'smartbuy') {
 		if (args[2] == 't' || args[2] == 'timer') {
+			
 			var ti = parseInterval(args[3]);
-			if (ti != NaN) {
+			if (ti != NaN || args[3] == undefined) {
 				if (args[1] == 'h' || args[1] == 'health')
 					if (sbhInterval == 0) {
 						sbhInterval = setInterval(sbhIfunc, ti);
+						ti_h = ti;
 						console.log(' > Таймер успешно создан');
-					} else console.log(' > Таймер уже включён');
+					} else {
+						if (args[3] == undefined && sbiInterval != 0) { 
+							clearInterval(sbhInterval);
+							sbhInterval = 0;
+							console.log(' > Таймер успешно удалён');
+						} else console.log(' > Таймер уже включён');
+					};
 				if (args[1] == 'i' || args[1] == 'infection')
 					if (sbiInterval == 0) {
 						sbiInterval = setInterval(sbiIfunc, ti);
+						ti_i = ti;
 						console.log(' > Таймер успешно создан');
-					} else console.log(' > Таймер уже включён');
+					} else {
+						if (args[3] == undefined && sbiInterval != 0) { 
+							clearInterval(sbiInterval);
+							sbiInterval = 0;
+							console.log(' > Таймер успешно удалён');
+						} else console.log(' > Таймер уже включён');
+					};
 			}
 			return;
 		}
@@ -168,12 +213,13 @@ async function cmd(line) {
 	if (args[0] == 'show' || args[0] == 's') {
 		if (args[1] == 'mine' || args[1] == 'm') ses.calcMine(true, true);
 		if (args[1] == 'bafs' || args[1] == 'b') console.log('\n',ses.bafs);
+		if (args[1] == 'points' || args[1] == 'p') await ses.updatePoints(true);
 	};
 }
 
 rl.on('line', async (line) => {
 	line = line.trim().toLowerCase();
-	if (line[0] == '-') line = line.substr(1); console.log(line);
+	if (line[0] == '-') line = line.substr(1);
 	
 	await cmd(line);
 	

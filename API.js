@@ -41,6 +41,7 @@ class session {
 	hc = 0; //Health
 	dc = 0; //infection(damage)
 	isDeath = false;
+	timeToLife = 0; //Время, через которое вы возродитесь
 	damage = 0; // Урон по вам
 	bafs = {}; //Бонусы
 	gmine_h = 0; gmine_d = 0; //Доход в минуту
@@ -187,7 +188,78 @@ class session {
 	];
 	
 	constructor() {
-	}	
+	};
+	
+	async api_sign() {
+		var resp;
+		try {
+			resp = await aReq(
+				{
+					method: 'GET',
+					url: gameAPI_url + 'sign?' + this.authp.toString(),
+				}
+			);
+		}
+		catch (err) {
+			if (err instanceof Error) {
+				throw {error: 1, description: 'Ошибка запроса к серверу игры', error_object: err};
+			} else {
+				throw {error: 2, description: 'Ошибка запроса к серверу игры', error_object: err};
+			}
+		};
+		return true;
+	}
+	
+	async api_users_get() {
+		var resp;
+		try {
+			resp = await aReq(
+				{
+					method: 'GET',
+					url: gameAPI_url + 'users/get?' + this.authp.toString(),
+				}
+			);
+		}
+		catch (err) {
+			if (err instanceof Error) {
+				throw {error: 1, description: 'Ошибка запроса к серверу игры', error_object: err};
+			} else {
+				throw {error: 2, description: 'Ошибка запроса к серверу игры', error_object: err};
+			}
+		};
+		var resp = JSON.parse(resp);
+		
+		this.hc = Math.trunc(resp.health);
+		this.dc = Math.trunc(resp.infection);
+		this.damage = resp.damage;
+		this.isDeath = resp.isDeath;
+		if (this.isDeath) this.timeToLife = resp.timeToLife; else this.timeToLife = 0;
+		
+		return resp;
+	}
+	
+	async api_boosters_get() {
+		var resp;
+		try {
+			resp = await aReq(
+				{
+					method: 'GET',
+					url: gameAPI_url + 'boosters/get?' + this.authp.toString()
+				}
+			);
+		} catch (err) {
+			if (err instanceof Error) {
+				throw {error: 1, description: 'Ошибка запроса к серверу игры', error_object: err};
+			} else {
+				throw {error: 2, description: 'Ошибка запроса к серверу игры', error_object: err};
+			}
+		}
+		
+		var resp = JSON.parse(resp);
+		
+		return resp;
+	}
+	
 	
 	async authByToken(token) {
 		var resp;
@@ -218,31 +290,29 @@ class session {
 		}
 		console.log('url:  ', mobile_iframe_url);
 		var url = new URL(mobile_iframe_url);
-		var url_sp = url.searchParams;
+		this.authp = url.searchParams;
 		
-		var authChekParams = {
-			method: 'GET',
-			url: gameAPI_url + 'users/get?' + url_sp.toString(),
-		};
+
 		var resp_ug;
 		try {
-			resp_ug = await aReq(authChekParams);
+			await this.api_sign();
+			
+			resp_ug = await this.api_users_get();
 		}
 		catch (err) {
 			throw {error: 4, description: 'Ошибка запроса к серверу игры', error_object: err};
 			return;
 		};
-		var resp_ug = JSON.parse(resp_ug);
 		
 		this.auth_id = resp_ug._id;
-		url_sp.set('userId', this.auth_id);
-		this.hc = Math.trunc(resp_ug.health);
-		this.dc = Math.trunc(resp_ug.infection);
-		this.isDeath = resp_ug.isDeath;
+		this.authp.set('userId', this.auth_id);
+		
+		console.log(`\n -Здоровье: +${this.hc}\n -Атака: +${this.dc}`);
+		
 		if (this.isDeath) {
-			console.log(' !> Вы мертвы');
+			console.log(` !> Вы мертвы, время для возрождения: ${this.timeToLife}`);
 		}
-		this.damage = resp_ug.damage;
+		
 		if (this.damage) {
 			console.log(' !> По вам идёт урон: ', this.damage);
 		}
@@ -251,43 +321,36 @@ class session {
 		var {h,i} = this.bafs.reduce(function(s,o) {return {h: s.h+o.health, i: s.i+o.infection}}, {h:0,i:0});
 		console.log(`\n> Эффекты:\n -Здоровье: +${h}\n -Атака: +${i}`);
 		
-		this.authp = url_sp;
 		this.#isAuth = true;			
 	}
 	
-	async updatePoints() {
-		if (!this.#isAuth) throw {error: 0, description: ' Необходима авторизация'};
+	async updatePoints(show) {
+		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
 		var resp_ug;
 		try {
-			resp_ug = await aReq(
-				{
-					method: 'GET',
-					url: gameAPI_url + 'users/get?' + this.authp.toString(),
-				}
-			);
+			resp_ug = await this.api_users_get();
 		}
 		catch (err) {
 			throw {error: 4, description: ' > Ошибка запроса к серверу игры', error_object: err};
 			return;
 		};
-		var resp_ug = JSON.parse(resp_ug);
 		
-		this.hc = Math.trunc(resp_ug.health);
-		this.dc = Math.trunc(resp_ug.infection);
-		this.isDeath = resp_ug.isDeath;
+		if (show) console.log(`\n -Здоровье: ${this.hc}\n -Атака: ${this.dc}`);
+		
 		if (this.isDeath) {
-			console.log(' !> Вы мертвы');
+			console.log(` !> Вы мертвы, время для возрождения: ${this.timeToLife}`);
 		}
-		this.damage = resp_ug.damage;
 		if (this.damage) {
 			console.log(' !> По вам идёт урон: ', this.damage);
-		}
+		};
 		
 		return true;
 	}
 	
 	async buy(arr) {
-		if (!this.#isAuth) throw {error: 0, description: ' Необходима авторизация'};
+		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
+		if (this.isDeath) throw {error: 0, description: 'Вы мертвы'};
+		
 		var obj = {alias: arr}; //"{"alias":["mask"]}"
 		var url = gameAPI_url + 'boosters/buy?' + this.authp.toString();
 		
@@ -315,28 +378,16 @@ class session {
 	}
 	
 	async boostersUpdate() {
-		if (!this.#isAuth) throw {error: 0, description: ' Необходима авторизация'};
-		
-		var url = gameAPI_url + 'boosters/get?' + this.authp.toString();// console.log(url);
+		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
 		
 		var resp;
 		try {
-			resp = await aReq(
-				{
-					method: 'GET',
-					url: url
-				}
-			);
+			resp = await this.api_boosters_get();
 		} catch (err) {
-			if (err instanceof Error) {
-				throw {error: 1, description: 'Ошибка запроса к серверу игры', error_object: err};
-			} else {
-				throw {error: 2, description: 'Ошибка запроса к серверу игры', error_object: err};
-			}
+			throw err;
 		}
 		
-		var j = JSON.parse(resp);
-		for (let o of j) {
+		for (let o of resp) {
 			if (o.isHealth) {
 				let ind = this.upg_h.findIndex(x => x.mine == o.health);
 				this.upg_h[ind].count = o.count;
@@ -349,8 +400,6 @@ class session {
 		};
 		
 		this.calcMine(true);
-		//console.log(this.this.upg_h);
-		//console.log(this.this.upg_d);
 		return true;
 	}
 	
@@ -367,17 +416,10 @@ class session {
 	}
 	
 	async smartBuy_d() {
-		if (!this.#isAuth) throw {error: 0, description: ' Необходима авторизация'};
-		var upgs = this.upg_d.reduce((res,obj)=>(res[obj.alias] = 0,res),{})
-		/*{
-			"mosquitoes": 0,
-			"cold": 0,
-			"dirty_water": 0,
-			"coronavirus": 0,
-			"virus": 0,
-			"mutations_coronavirus": 0,
-			"pnevmonia": 0
-		};*/
+		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
+		if (this.isDeath) throw {error: 0, description: 'Вы мертвы'};
+		
+		var upgs = this.upg_d.reduce((res,obj)=>(res[obj.alias] = 0,res),{});
 		
 		var li = this.upg_d.length - 1;
 		var add = -1;
@@ -432,7 +474,6 @@ class session {
 				console.log(' > Ошибка покупки: \n', err);
 				console.log(' > Ещё одна попытка через 10 секунд...');
 				await sleep(10000);
-				//return;
 			}
 		};
 		
@@ -440,17 +481,10 @@ class session {
 	}
 	
 	async smartBuy_h() {
-		if (!this.#isAuth) throw {error: 0, description: ' Необходима авторизация'};
+		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
+		if (this.isDeath) throw {error: 0, description: 'Вы мертвы'};
+		
 		var upgs = this.upg_h.reduce((res,obj)=>(res[obj.alias] = 0,res),{});
-		/*{
-			"nii": 0,
-			"fabric": 0,
-			"vitamins": 0,
-			"mask": 0,
-			"hospital": 0,
-			"respirator": 0,
-			"scientists": 0
-		};*/
 		
 		var li = this.upg_h.length - 1;
 		var add = -1;
@@ -506,7 +540,6 @@ class session {
 				console.log(' > Ошибка покупки: \n', err);
 				console.log(' > Ещё одна попытка через 10 секунд...');
 				await sleep(10000);
-				//return;
 			}
 		};
 		
