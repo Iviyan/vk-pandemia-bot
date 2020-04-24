@@ -349,7 +349,10 @@ class session {
 	
 	async buy(arr) {
 		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
-		if (this.isDeath) throw {error: 0, description: 'Вы мертвы'};
+		if (this.isDeath) {
+			console.log(' > Вы мертвы, покупка отменена');
+			return;
+		};
 		
 		var obj = {alias: arr}; //"{"alias":["mask"]}"
 		var url = gameAPI_url + 'boosters/buy?' + this.authp.toString();
@@ -417,7 +420,10 @@ class session {
 	
 	async smartBuy_d() {
 		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
-		if (this.isDeath) throw {error: 0, description: 'Вы мертвы'};
+		if (this.isDeath) {
+			console.log(' > Вы мертвы, покупка отменена');
+			return;
+		};
 		
 		var upgs = this.upg_d.reduce((res,obj)=>(res[obj.alias] = 0,res),{});
 		
@@ -482,7 +488,10 @@ class session {
 	
 	async smartBuy_h() {
 		if (!this.#isAuth) throw {error: 0, description: 'Необходима авторизация'};
-		if (this.isDeath) throw {error: 0, description: 'Вы мертвы'};
+		if (this.isDeath) {
+			console.log(' > Вы мертвы, покупка отменена');
+			return;
+		};
 		
 		var upgs = this.upg_h.reduce((res,obj)=>(res[obj.alias] = 0,res),{});
 		

@@ -96,7 +96,7 @@ function ifDeath() {
 		console.log(`Т.к. вы мертвы, таймеры будут приостановлены на ${ses.timeToLife}`);
 		if (sbiInterval != 0) clearInterval(sbiInterval);
 		if (sbhInterval != 0) clearInterval(sbhInterval);
-		var ttl_ = ses.timeToLife
+		var ttl_ = ses.timeToLife.split(':');
 		var tm = parseInterval(ttl_[0]+'h') + parseInterval(ttl_[1]+'m');
 		death_h = Boolean(sbhInterval);
 		death_i = Boolean(sbiInterval);
