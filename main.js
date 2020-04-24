@@ -96,7 +96,7 @@ function ifDeath() {
 		console.log(`Т.к. вы мертвы, таймеры будут приостановлены на ${ses.timeToLife}`);
 		if (sbiInterval != 0) clearInterval(sbiInterval);
 		if (sbhInterval != 0) clearInterval(sbhInterval);
-		var ttl_ = ses.timeToLife
+		var ttl_ = ses.timeToLife.split(':');
 		var tm = parseInterval(ttl_[0]+'h') + parseInterval(ttl_[1]+'m');
 		death_h = Boolean(sbhInterval);
 		death_i = Boolean(sbiInterval);
@@ -108,7 +108,7 @@ function ifDeath() {
 				};
 				if (death_i) {
 					sbhInterval = setInterval(sbhIfunc, ti_i);
-					console.log(' > Таймер здоровья успешно возобновлён');
+					console.log(' > Таймер атаки успешно возобновлён');
 				};
 			}, tm);
 		return true;
@@ -168,7 +168,7 @@ async function cmd(line) {
 					if (sbhInterval == 0) {
 						sbhInterval = setInterval(sbhIfunc, ti);
 						ti_h = ti;
-						console.log(' > Таймер успешно создан');
+						console.log(' > Таймер автозакупки улучшений здоровья успешно создан');
 					} else {
 						if (args[3] == undefined && sbiInterval != 0) { 
 							clearInterval(sbhInterval);
@@ -180,7 +180,7 @@ async function cmd(line) {
 					if (sbiInterval == 0) {
 						sbiInterval = setInterval(sbiIfunc, ti);
 						ti_i = ti;
-						console.log(' > Таймер успешно создан');
+						console.log(' > Таймер автозакупки улучшений атаки успешно создан');
 					} else {
 						if (args[3] == undefined && sbiInterval != 0) { 
 							clearInterval(sbiInterval);
