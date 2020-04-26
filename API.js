@@ -69,123 +69,9 @@ class session {
 		return NaN;
 	}
 	
-	upg_d = [
-		{
-			id: 1,
-			name: 'Комары',
-			alias: 'mosquitoes',
-			mine: 1,
-			cost_: 25,
-			count: 0
-		},
-		{
-			id: 2,
-			name: 'Грязная вода',
-			alias: 'dirty_water',
-			mine: 2,
-			cost_: 75,
-			count: 0
-		},
-		{
-			id: 3,
-			name: 'Простуда',
-			alias: 'cold',
-			mine: 4,
-			cost_: 200,
-			count: 0
-		},
-		{
-			id: 4,
-			name: 'Вирусы',
-			alias: 'virus',
-			mine: 10,
-			cost_: 450,
-			count: 0
-		},
-		{
-			id: 5,
-			name: 'Коронавирус',
-			alias: 'coronavirus',
-			mine: 30,
-			cost_: 2000,
-			count: 0
-		},
-		{
-			id: 6,
-			name: 'Коронавирус+',
-			alias: 'mutations_coronavirus',
-			mine: 50,
-			cost_: 7000,
-			count: 0
-		},
-		{
-			id: 7,
-			name: 'Пневмония',
-			alias: 'pnevmonia',
-			mine: 60,
-			cost_: 15000,
-			count: 0
-		}
-	];
+	upg_d = [];
 	
-	upg_h = [
-		{
-			id: 1,
-			name: "Маски",
-			alias: "mask",
-			mine: 1,
-			cost_: 20,
-			count: 0
-		},
-		{
-			id: 2,
-			name: "Респираторы",
-			alias: "respirator",
-			mine: 2,
-			cost_: 50,
-			count: 0
-		},
-		{
-			id: 3,
-			name: "Витамины",
-			alias: "vitamins",
-			mine: 4,
-			cost_: 150,
-			count: 0
-		},
-		{
-			id: 4,
-			name: "Больница",
-			alias: "hospital",
-			mine: 10,
-			cost_: 300,
-			count: 0
-		},
-		{
-			id: 5,
-			name: "Фабрика по производству лекарств",
-			alias: "fabric",
-			mine: 30,
-			cost_: 1500,
-			count: 0
-		},
-		{
-			id: 6,
-			name: "НИИ",
-			alias: "nii",
-			mine: 50,
-			cost_: 5000,
-			count: 0
-		},
-		{
-			id: 7,
-			name: "Отряд ученых",
-			alias: "scientists",
-			mine: 60,
-			cost_: 15000,
-			count: 0
-		}
-	];
+	upg_h = [];
 	
 	constructor() {
 	};
@@ -320,6 +206,44 @@ class session {
 		this.bafs = resp_ug.bafs;
 		var {h,i} = this.bafs.reduce(function(s,o) {return {h: s.h+o.health, i: s.i+o.infection}}, {h:0,i:0});
 		console.log(`\n> Эффекты:\n -Здоровье: +${h}\n -Атака: +${i}`);
+		
+		var resp_bg;
+		try {
+			resp_bg = await this.api_boosters_get();
+		} catch (err) {
+			throw err;
+		}
+		
+		this.upg_h = resp_bg.reduce(function(res,obj) {
+			if (obj.isHealth) res.push(
+				{
+					name: obj.name,
+					alias: obj.alias,
+					mine: obj.health,
+					cost_: obj.cost.health,
+					count: obj.count,
+					cost: (obj.count + 1) * obj.cost.health //(Number(obj.count) + 1) * Number(obj.cost.health)
+				}
+			); 
+			return res;
+		}, []);
+		
+		this.upg_d = resp_bg.reduce(function(res,obj) {
+			if (obj.isInfection) res.push(
+				{
+					name: obj.name,
+					alias: obj.alias,
+					mine: obj.infection,
+					cost_: obj.cost.infection,
+					count: obj.count,
+					cost: (obj.count + 1) * obj.cost.infection
+				}
+			); 
+			return res;
+		}, []);
+		
+		this.calcMine(true);
+		console.log(this.upg_d);
 		
 		this.#isAuth = true;			
 	}

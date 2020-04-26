@@ -42,13 +42,13 @@ async function init() {
 		return;
 	}
 	
-	try {
+	/*try {
 		console.log('\n > Обноление информации об улучшениях...');
 		await ses.boostersUpdate(); //console.log(ses.upg_h);
 	} catch (err) {
 		console.log(' > Ошибка получения информации об улучшениях: \n', err);
 		return;
-	}
+	}*/
 	
 	console.log('\n > Авторизация успешно завершена\n');
 	console.log(
